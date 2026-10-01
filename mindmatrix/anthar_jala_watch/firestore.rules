@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Any authenticated user can create a borewell entry
+    // Users can only update/delete their own entries
+    match /borewells/{entryId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.depthFt is number
+        && request.resource.data.depthFt > 0
+        && request.resource.data.yearDrilled is int
+        && request.resource.data.yearDrilled >= 1980;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // Zone summaries are readable by all authenticated users
+    // Only Cloud Functions (admin SDK) can write zones
+    match /zones/{zoneId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Cloud Functions write zones
+    }
+
+    // Alerts are readable by authenticated users, written only by Cloud Functions
+    match /alerts/{alertId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false; // Cloud Functions only
+    }
+  }
+}

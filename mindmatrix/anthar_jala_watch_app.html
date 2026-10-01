@@ -1,0 +1,404 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: transparent; }
+  .app { max-width: 420px; margin: 0 auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-xl); overflow: hidden; background: var(--color-background-primary); min-height: 700px; display: flex; flex-direction: column; }
+  .status-bar { background: #1a6e3c; padding: 8px 16px 4px; display: flex; justify-content: space-between; align-items: center; }
+  .status-bar span { color: #fff; font-size: 11px; font-weight: 500; }
+  .header { background: #1a6e3c; padding: 12px 16px 16px; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .header-title { color: #fff; font-size: 17px; font-weight: 500; }
+  .header-sub { color: rgba(255,255,255,0.7); font-size: 12px; }
+  .header-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; }
+  .alert-pill { background: rgba(255,180,0,0.25); border: 0.5px solid rgba(255,180,0,0.5); color: #ffe080; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+  .screen { flex: 1; display: none; flex-direction: column; overflow-y: auto; }
+  .screen.active { display: flex; }
+  .nav { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; cursor: pointer; border: none; background: transparent; font-size: 10px; color: var(--color-text-secondary); transition: color 0.15s; }
+  .nav-item.active { color: #1a6e3c; }
+  .nav-item i { font-size: 20px; }
+  .section { padding: 16px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .section:last-child { border-bottom: none; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px; margin-bottom: 10px; border: 0.5px solid var(--color-border-tertiary); }
+  .card:last-child { margin-bottom: 0; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .badge-green { background: #d4f0e0; color: #0f6e56; }
+  .badge-yellow { background: #faeeda; color: #854f0b; }
+  .badge-red { background: #fcebeb; color: #a32d2d; }
+  .badge-blue { background: #e6f1fb; color: #185fa5; }
+  .stat-row { display: flex; gap: 8px; margin-top: 10px; }
+  .stat { flex: 1; background: var(--color-background-primary); border-radius: var(--border-radius-md); padding: 8px; text-align: center; border: 0.5px solid var(--color-border-tertiary); }
+  .stat-val { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-lbl { font-size: 10px; color: var(--color-text-secondary); margin-top: 2px; }
+  .map-container { background: #e8f5ed; border-radius: var(--border-radius-lg); height: 200px; position: relative; overflow: hidden; border: 0.5px solid var(--color-border-tertiary); }
+  .map-grid { position: absolute; inset: 0; }
+  .map-legend { position: absolute; bottom: 8px; right: 8px; background: rgba(255,255,255,0.92); border-radius: 6px; padding: 6px 8px; font-size: 10px; }
+  .legend-row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .map-label { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,0.9); font-size: 10px; padding: 3px 7px; border-radius: 4px; color: #444; font-weight: 500; }
+  .input-group { margin-bottom: 12px; }
+  .input-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 5px; display: block; }
+  .input-row { display: flex; gap: 8px; }
+  input[type=text], input[type=number], select, textarea { width: 100%; padding: 8px 10px; font-size: 14px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-family: var(--font-sans); }
+  textarea { resize: none; height: 60px; }
+  .btn-primary { width: 100%; padding: 11px; background: #1a6e3c; color: #fff; border: none; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary:hover { background: #155c30; }
+  .btn-primary:disabled { background: #7aab8a; }
+  .depth-scale { display: flex; align-items: stretch; gap: 12px; }
+  .scale-bar { width: 28px; border-radius: 4px; background: linear-gradient(to bottom, #1a6e3c 0%, #e6b830 50%, #c0392b 100%); flex-shrink: 0; position: relative; min-height: 160px; }
+  .scale-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--color-text-secondary); padding: 2px 0; }
+  .scale-info { flex: 1; }
+  .scale-marker { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .marker-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .marker-text { font-size: 12px; color: var(--color-text-primary); }
+  .recharge-card { border-left: 3px solid #1a6e3c; border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0; background: var(--color-background-secondary); padding: 10px 12px; margin-bottom: 8px; }
+  .recharge-card h4 { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+  .recharge-card p { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .recharge-icon { width: 32px; height: 32px; background: #d4f0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .alert-card { border-left: 3px solid #e24b4a; padding: 10px 12px; background: #fff5f5; border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0; margin-bottom: 8px; }
+  .alert-card.warn { border-left-color: #ef9f27; background: #fffbf0; }
+  .alert-card.info { border-left-color: #378add; background: #f0f7ff; }
+  .alert-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+  .alert-time { font-size: 11px; color: var(--color-text-secondary); }
+  .success-state { display: flex; flex-direction: column; align-items: center; padding: 24px; gap: 12px; display: none; }
+  .success-circle { width: 56px; height: 56px; background: #d4f0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .progress-ring { width: 100%; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 3px; background: #1a6e3c; transition: width 0.4s; }
+  .community-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .community-row:last-child { border-bottom: none; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e1f5ee; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #0f6e56; flex-shrink: 0; }
+  .community-info { flex: 1; }
+  .community-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .community-detail { font-size: 11px; color: var(--color-text-secondary); }
+</style>
+
+<h2 class="sr-only">Anthar-Jala Watch – Community Borewell Monitoring App prototype</h2>
+<div class="app">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>Bengaluru Rural ▾</span>
+    <span><i class="ti ti-wifi" style="font-size:13px"></i> 4G</span>
+  </div>
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">ಅಂತರ್-ಜಲ Watch</div>
+        <div class="header-sub">Community Borewell Monitor</div>
+      </div>
+      <div class="header-icon"><i class="ti ti-droplet" style="color:#fff;font-size:18px"></i></div>
+    </div>
+    <div class="alert-pill"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Water table dropped 8ft this season</div>
+  </div>
+
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="screen-home">
+    <div class="section">
+      <div class="section-title">Village Water Health</div>
+      <div class="map-container">
+        <svg class="map-grid" viewBox="0 0 380 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="380" height="200" fill="#dff0e8"/>
+          <circle cx="80" cy="70" r="45" fill="rgba(26,110,60,0.35)"/>
+          <circle cx="160" cy="90" r="50" fill="rgba(232,184,48,0.4)"/>
+          <circle cx="260" cy="75" r="55" fill="rgba(192,57,43,0.38)"/>
+          <circle cx="310" cy="140" r="35" fill="rgba(232,184,48,0.35)"/>
+          <circle cx="90" cy="150" r="30" fill="rgba(26,110,60,0.3)"/>
+          <circle cx="190" cy="155" r="28" fill="rgba(192,57,43,0.32)"/>
+          <circle cx="80" cy="70" r="12" fill="rgba(26,110,60,0.7)"/>
+          <circle cx="160" cy="90" r="12" fill="rgba(232,184,48,0.8)"/>
+          <circle cx="260" cy="75" r="12" fill="rgba(192,57,43,0.8)"/>
+          <circle cx="310" cy="140" r="8" fill="rgba(232,184,48,0.7)"/>
+          <circle cx="90" cy="150" r="8" fill="rgba(26,110,60,0.6)"/>
+          <circle cx="190" cy="155" r="8" fill="rgba(192,57,43,0.7)"/>
+          <rect x="20" y="18" width="60" height="14" rx="3" fill="rgba(255,255,255,0.7)"/>
+          <text x="50" y="29" text-anchor="middle" font-size="9" fill="#333" font-family="sans-serif">Ward 3</text>
+          <rect x="130" y="35" width="62" height="14" rx="3" fill="rgba(255,255,255,0.7)"/>
+          <text x="161" y="46" text-anchor="middle" font-size="9" fill="#333" font-family="sans-serif">Main Street</text>
+          <rect x="220" y="20" width="72" height="14" rx="3" fill="rgba(255,255,255,0.7)"/>
+          <text x="256" y="31" text-anchor="middle" font-size="9" fill="#333" font-family="sans-serif">North Fields</text>
+          <line x1="0" y1="110" x2="380" y2="110" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-dasharray="4,4"/>
+          <line x1="190" y1="0" x2="190" y2="200" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-dasharray="4,4"/>
+        </svg>
+        <div class="map-label"><i class="ti ti-map-pin" style="font-size:11px"></i> Live Heatmap</div>
+        <div class="map-legend">
+          <div class="legend-row"><div class="legend-dot" style="background:#1a6e3c"></div><span style="color:#444">Good</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#e6b830"></div><span style="color:#444">Stress</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#c0392b"></div><span style="color:#444">Critical</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Area Summary</div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val" style="color:#1a6e3c">142</div><div class="stat-lbl">Borewells logged</div></div>
+        <div class="stat"><div class="stat-val" style="color:#e6b830">320ft</div><div class="stat-lbl">Avg depth</div></div>
+        <div class="stat"><div class="stat-val" style="color:#c0392b">23</div><div class="stat-lbl">Critical wells</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Activity</div>
+      <div class="community-row">
+        <div class="avatar">RK</div>
+        <div class="community-info">
+          <div class="community-name">Raju Kumar</div>
+          <div class="community-detail">Logged 380ft borewell · Ward 3 · 2 hrs ago</div>
+        </div>
+        <span class="badge badge-yellow">Stress</span>
+      </div>
+      <div class="community-row">
+        <div class="avatar">SM</div>
+        <div class="community-info">
+          <div class="community-name">Sunita Mallesh</div>
+          <div class="community-detail">Yield: 1 inch · North Fields · 5 hrs ago</div>
+        </div>
+        <span class="badge badge-red">Critical</span>
+      </div>
+      <div class="community-row">
+        <div class="avatar">PV</div>
+        <div class="community-info">
+          <div class="community-name">Prakash V.</div>
+          <div class="community-detail">Recharge pit built · Main St · Yesterday</div>
+        </div>
+        <span class="badge badge-green">Recharge</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG SCREEN -->
+  <div class="screen" id="screen-log">
+    <div class="section">
+      <div class="section-title">Log Your Borewell</div>
+
+      <div id="log-form">
+        <div class="input-group">
+          <label class="input-label">Borewell depth (feet)</label>
+          <input type="number" id="in-depth" placeholder="e.g. 300" min="0"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Year drilled</label>
+          <input type="number" id="in-year" placeholder="e.g. 2018" min="1980" max="2026"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Current water yield</label>
+          <select id="in-yield">
+            <option value="">Select yield</option>
+            <option>Good (3+ inches)</option>
+            <option>Moderate (1–2 inches)</option>
+            <option>Low (less than 1 inch)</option>
+            <option>Dry / No water</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Current water level depth (feet from surface)</label>
+          <input type="number" id="in-level" placeholder="e.g. 150"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Notes (optional)</label>
+          <textarea placeholder="Any changes this season?"></textarea>
+        </div>
+
+        <div style="background:#e1f5ee;border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          <i class="ti ti-shield-lock" style="color:#0f6e56;font-size:16px" aria-hidden="true"></i>
+          <span style="font-size:12px;color:#0f6e56;">Your exact location is anonymised — only the neighbourhood zone is visible on the map.</span>
+        </div>
+
+        <button class="btn-primary" onclick="submitLog()">
+          <i class="ti ti-send" style="font-size:16px"></i> Submit Borewell Data
+        </button>
+      </div>
+
+      <div class="success-state" id="log-success">
+        <div class="success-circle"><i class="ti ti-check" style="color:#0f6e56;font-size:28px"></i></div>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:500;color:var(--color-text-primary);">Data submitted!</div>
+          <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">The heatmap will update shortly. Thank you for contributing.</div>
+        </div>
+        <button class="btn-primary" onclick="resetLog()" style="margin-top:8px;">Log another borewell</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Water depth scale</div>
+      <div class="depth-scale">
+        <div>
+          <div class="scale-labels">
+            <span>0 ft</span>
+            <span>150 ft</span>
+            <span>300 ft</span>
+            <span>500 ft</span>
+          </div>
+        </div>
+        <div class="scale-bar"></div>
+        <div class="scale-info">
+          <div class="scale-marker"><div class="marker-dot" style="background:#1a6e3c"></div><div class="marker-text"><strong>0–100 ft</strong> — Healthy, seasonal recharge zone</div></div>
+          <div class="scale-marker"><div class="marker-dot" style="background:#e6b830"></div><div class="marker-text"><strong>100–250 ft</strong> — Moderate stress, monitor closely</div></div>
+          <div class="scale-marker"><div class="marker-dot" style="background:#c0392b"></div><div class="marker-text"><strong>250+ ft</strong> — Critical, recharge urgently needed</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECHARGE SCREEN -->
+  <div class="screen" id="screen-recharge">
+    <div class="section">
+      <div class="section-title">Recharge guide</div>
+
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="recharge-icon"><i class="ti ti-bucket" style="color:#0f6e56;font-size:16px"></i></div>
+            <div class="card-title">Recharge pit</div>
+          </div>
+          <span class="badge badge-green">Easy · DIY</span>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.6;">Dig a 3×3 ft pit, 4 ft deep near your borewell. Fill with gravel, sand, and charcoal layers. Rainwater filters down and recharges the aquifer below.</p>
+        <svg viewBox="0 0 260 80" style="width:100%;margin-top:10px;border-radius:6px;" xmlns="http://www.w3.org/2000/svg">
+          <rect width="260" height="80" rx="6" fill="#e1f5ee"/>
+          <rect x="90" y="12" width="80" height="56" rx="4" fill="#9fe1cb" stroke="#0f6e56" stroke-width="1"/>
+          <rect x="96" y="18" width="68" height="12" rx="2" fill="#5dcaa5" opacity="0.6"/>
+          <text x="130" y="28" text-anchor="middle" font-size="8" fill="#085041" font-family="sans-serif">Gravel</text>
+          <rect x="96" y="32" width="68" height="12" rx="2" fill="#9fe1cb" opacity="0.7"/>
+          <text x="130" y="42" text-anchor="middle" font-size="8" fill="#085041" font-family="sans-serif">Sand</text>
+          <rect x="96" y="46" width="68" height="16" rx="2" fill="#1d9e75" opacity="0.5"/>
+          <text x="130" y="57" text-anchor="middle" font-size="8" fill="#085041" font-family="sans-serif">Charcoal</text>
+          <path d="M20 15 L50 15 L50 40 L60 55" stroke="#378add" stroke-width="2" fill="none" stroke-dasharray="3,2"/>
+          <text x="10" y="12" font-size="8" fill="#185fa5" font-family="sans-serif">Rain →</text>
+          <path d="M200 15 L230 15 L230 40 L220 55" stroke="#378add" stroke-width="2" fill="none" stroke-dasharray="3,2"/>
+          <text x="200" y="72" font-size="8" fill="#185fa5" font-family="sans-serif">To aquifer ↓</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="recharge-icon"><i class="ti ti-home" style="color:#0f6e56;font-size:16px"></i></div>
+            <div class="card-title">Rooftop rainwater harvesting</div>
+          </div>
+          <span class="badge badge-green">Moderate</span>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.6;">Connect roof drainpipes via a first-flush filter to a storage tank. Overflow from the tank can be directed into a soakpit to recharge the groundwater.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="recharge-icon"><i class="ti ti-arrows-right-down" style="color:#0f6e56;font-size:16px"></i></div>
+            <div class="card-title">Borewell recharge shaft</div>
+          </div>
+          <span class="badge badge-yellow">Advanced</span>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.6;">Sink a 6 inch PVC pipe 20–30 ft into the ground adjacent to the borewell. Add a sand-gravel filter at the top. During rains, water flows directly into the aquifer.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Community recharge tracker</div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--color-text-secondary)">Ward 3 recharge goal</span><span style="font-weight:500">34 / 50 pits built</span></div>
+        <div class="progress-ring"><div class="progress-fill" style="width:68%"></div></div>
+      </div>
+      <div style="font-size:12px;color:var(--color-text-secondary);">16 more recharge pits needed to reach the seasonal goal. Help your neighbours!</div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="sendPrompt('How do I build a recharge pit step by step?')">
+        <i class="ti ti-tools" style="font-size:16px"></i> Get step-by-step instructions ↗
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTS SCREEN -->
+  <div class="screen" id="screen-alerts">
+    <div class="section">
+      <div class="section-title">Active alerts</div>
+
+      <div class="alert-card">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <i class="ti ti-alert-triangle" style="color:#a32d2d;font-size:15px"></i>
+          <div class="alert-title" style="color:#a32d2d;">Critical: North Fields zone</div>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Water table in this zone has dropped 18ft since March. 7 borewells now yield under 1 inch. Recharge action needed immediately.</p>
+        <div class="alert-time">Today, 8:00 AM</div>
+      </div>
+
+      <div class="alert-card warn">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <i class="ti ti-clock" style="color:#854f0b;font-size:15px"></i>
+          <div class="alert-title" style="color:#854f0b;">Warning: Main Street area</div>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Average depth has reached 240ft — approaching the stress threshold. Monitor borewell yield weekly.</p>
+        <div class="alert-time">Yesterday, 3:15 PM</div>
+      </div>
+
+      <div class="alert-card info">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <i class="ti ti-cloud-rain" style="color:#185fa5;font-size:15px"></i>
+          <div class="alert-title" style="color:#185fa5;">Forecast: Good rain expected</div>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">IMD forecasts 40mm rainfall in next 72 hours. Good opportunity to activate your recharge structures!</p>
+        <div class="alert-time">2 days ago</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">AI recommendation</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:28px;height:28px;background:#e1f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="ti ti-bulb" style="color:#0f6e56;font-size:14px"></i></div>
+          <div class="card-title">Smart suggestion</div>
+        </div>
+        <p style="font-size:12px;color:var(--color-text-secondary);line-height:1.6;">Based on 142 borewell logs in your area, water stress peaks in April–May. Starting recharge activities in February can prevent 60% of critical failures. <strong>Act now before summer.</strong></p>
+        <button class="btn-primary" style="margin-top:10px;" onclick="sendPrompt('What recharge method works best for red laterite soil in Karnataka?')">
+          <i class="ti ti-robot" style="font-size:16px"></i> Ask AI for my area ↗
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav" role="navigation" aria-label="App navigation">
+    <button class="nav-item active" onclick="switchTab('home',this)" aria-label="Home">
+      <i class="ti ti-home" aria-hidden="true"></i>Home
+    </button>
+    <button class="nav-item" onclick="switchTab('log',this)" aria-label="Log borewell">
+      <i class="ti ti-pencil" aria-hidden="true"></i>Log
+    </button>
+    <button class="nav-item" onclick="switchTab('recharge',this)" aria-label="Recharge guide">
+      <i class="ti ti-leaf" aria-hidden="true"></i>Recharge
+    </button>
+    <button class="nav-item" onclick="switchTab('alerts',this)" aria-label="Alerts">
+      <i class="ti ti-bell" aria-hidden="true"></i>Alerts
+      <span style="width:7px;height:7px;background:#c0392b;border-radius:50%;position:absolute;margin-top:-18px;margin-left:14px;"></span>
+    </button>
+  </nav>
+</div>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function submitLog() {
+  const depth = document.getElementById('in-depth').value;
+  const year = document.getElementById('in-year').value;
+  const yld = document.getElementById('in-yield').value;
+  if (!depth || !year || !yld) {
+    alert('Please fill in depth, year, and yield.');
+    return;
+  }
+  document.getElementById('log-form').style.display = 'none';
+  const s = document.getElementById('log-success');
+  s.style.display = 'flex';
+}
+
+function resetLog() {
+  document.getElementById('log-form').style.display = 'block';
+  document.getElementById('log-success').style.display = 'none';
+  ['in-depth','in-year','in-level'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('in-yield').value = '';
+}
+</script>
